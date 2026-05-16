@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>自定义德州</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="table-area" aria-label="德州扑克牌桌">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Custom Texas Hold'em</p>
+            <h1>自定义德州</h1>
+          </div>
+          <div class="round-pill" id="stageLabel">等待开局</div>
+        </header>
+
+        <div class="felt">
+          <div class="pot-panel">
+            <span>底池</span>
+            <strong id="potValue">0</strong>
+          </div>
+          <div class="community-row" id="communityCards" aria-label="公共牌"></div>
+          <div class="action-log" id="actionLog" aria-live="polite">
+            设置规则后点击“开始新局”。
+          </div>
+        </div>
+
+        <section class="players-grid" id="playersGrid" aria-label="玩家列表"></section>
+      </section>
+
+      <aside class="control-panel" aria-label="游戏设置">
+        <div class="panel-section">
+          <h2>规则设置</h2>
+          <label>
+            玩家数量
+            <input id="playerCount" type="number" min="2" max="8" value="4" />
+          </label>
+          <label>
+            起始筹码
+            <input id="startingStack" type="number" min="100" step="50" value="1000" />
+          </label>
+          <label>
+            小盲 / 大盲
+            <div class="split-inputs">
+              <input id="smallBlind" type="number" min="1" value="10" />
+              <input id="bigBlind" type="number" min="2" value="20" />
+            </div>
+          </label>
+          <label>
+            庄位
+            <input id="dealerSeat" type="number" min="1" value="1" />
+          </label>
+        </div>
+
+        <div class="panel-section">
+          <h2>玩家名称</h2>
+          <textarea id="playerNames" rows="5">你
+阿月
+小陈
+Luna</textarea>
+        </div>
+
+        <div class="panel-section">
+          <h2>操作</h2>
+          <div class="button-grid">
+            <button id="newHandBtn" class="primary">开始新局</button>
+            <button id="flopBtn">翻牌</button>
+            <button id="turnBtn">转牌</button>
+            <button id="riverBtn">河牌</button>
+            <button id="showdownBtn">摊牌结算</button>
+            <button id="resetBtn">重置</button>
+          </div>
+        </div>
+
+        <div class="panel-section compact">
+          <h2>玩法说明</h2>
+          <p>
+            本项目会自动洗牌、发手牌、收盲注，并在摊牌时用七选五算法比较牌型。
+            你可以改玩家数、筹码、盲注和姓名，做自己的桌游规则原型。
+          </p>
+        </div>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
