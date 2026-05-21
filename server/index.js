@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs/promises");
 const path = require("path");
 const { chooseGtoBaselineAction } = require("../src/agent/gtoBaseline");
+const { buildGtoMemory } = require("../src/agent/gtoMemory");
 const { validateAgentAction } = require("../src/agent/legalActionValidator");
 const { requestDeepSeekDecision } = require("./deepseekAgent");
 
@@ -35,6 +36,7 @@ const server = http.createServer(async (req, res) => {
 
 async function handleAgentAct(req, res) {
   const snapshot = await readJsonBody(req);
+  snapshot.gtoBaseMemory = buildGtoMemory(snapshot);
   const legal = snapshot.legalActions;
   const gtoAction = chooseGtoBaselineAction(snapshot);
   let action = gtoAction;

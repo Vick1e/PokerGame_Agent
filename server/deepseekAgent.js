@@ -6,12 +6,15 @@ function buildDeepSeekDecisionPayload(snapshot, gtoAction) {
       {
         role: "system",
         content:
-          "You are a Texas Hold'em poker agent. Choose only from the provided legal actions. Never assume hidden opponent cards.",
+          "You are a Texas Hold'em poker agent. Use the provided GTO base memory, action route, prior AI decisions, pot geometry, and legal actions. Choose only from the provided legal actions. Never assume hidden opponent cards. Return concise JSON only; do not include hidden chain-of-thought.",
       },
       {
         role: "user",
         content: JSON.stringify({
           table: snapshot,
+          gtoBaseMemory: snapshot.gtoBaseMemory,
+          actionMemory: snapshot.actionMemory,
+          decisionMemory: snapshot.decisionMemory,
           gtoSuggestion: gtoAction,
           responseShape: {
             type: "fold | check | call | betRaise | allIn",

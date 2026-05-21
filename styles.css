@@ -394,7 +394,7 @@ textarea:focus {
 
 .table-action-bar {
   display: grid;
-  grid-template-columns: minmax(190px, 1.1fr) 150px minmax(360px, 2fr);
+  grid-template-columns: minmax(170px, 0.95fr) 132px minmax(250px, 1.2fr) minmax(330px, 1.6fr);
   gap: 10px;
   align-items: end;
   padding: 10px;
@@ -413,6 +413,21 @@ textarea:focus {
 
 .table-action-bar .button-grid button {
   min-width: 0;
+}
+
+.quick-bet-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.quick-bet-grid button {
+  min-height: 34px;
+  padding: 4px 6px;
+  color: var(--gold);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  background: rgba(226, 182, 89, 0.09);
 }
 
 .ai-panel {
@@ -561,10 +576,15 @@ button.primary {
     gap: 5px;
   }
 
-  .table-action-bar button {
+  .table-action-bar button,
+  .quick-bet-grid button {
     min-height: 32px;
     padding: 4px;
     font-size: 0.7rem;
+  }
+
+  .quick-bet-grid {
+    gap: 5px;
   }
 
   .actor-box {

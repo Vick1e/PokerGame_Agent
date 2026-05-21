@@ -23,6 +23,7 @@ const ranks = [
 
 const handNames = ["高牌", "一对", "两对", "三条", "顺子", "同花", "葫芦", "四条", "同花顺"];
 const streetOrder = ["preflop", "flop", "turn", "river"];
+const userSeatIndex = 0;
 
 const controls = {
   playerCount: document.querySelector("#playerCount"),
@@ -41,6 +42,7 @@ const controls = {
   callBtn: document.querySelector("#callBtn"),
   betRaiseBtn: document.querySelector("#betRaiseBtn"),
   allInBtn: document.querySelector("#allInBtn"),
+  betPresetButtons: document.querySelectorAll("[data-bet-preset], [data-pot-size]"),
 };
 
 const views = {
@@ -814,6 +816,7 @@ function buildAgentSnapshot(index) {
   const player = state.players[index];
   return {
     seatIndex: index,
+    handNumber: state.handNumber,
     stage: state.stage,
     holeCards: player.cards,
     communityCards: state.community,
@@ -826,6 +829,8 @@ function buildAgentSnapshot(index) {
     streetBet: player.streetBet,
     position: player.role,
     legalActions: getLegalActions(index),
+    actionMemory: buildActionMemory(index),
+    decisionMemory: buildDecisionMemory(index),
     opponents: state.players
       .map((seat, seatIndex) => ({
         seatIndex,
@@ -840,6 +845,43 @@ function buildAgentSnapshot(index) {
       }))
       .filter((seat) => seat.seatIndex !== index),
   };
+}
+
+function buildActionMemory(index) {
+  return {
+    hero: state.players[index]?.name || `座位 ${index + 1}`,
+    dealer: state.players[state.dealerSeat]?.name || "",
+    userSeat: state.players[userSeatIndex]?.name || "",
+    activePlayers: activeContestants().map((seatIndex) => ({
+      seatIndex,
+      name: state.players[seatIndex].name,
+      position: state.players[seatIndex].role,
+      stack: state.players[seatIndex].stack,
+      committed: state.players[seatIndex].committed,
+      streetBet: state.players[seatIndex].streetBet,
+      lastAction: state.players[seatIndex].lastAction,
+      folded: state.players[seatIndex].folded,
+      allIn: state.players[seatIndex].allIn,
+    })),
+    recentActionRoute: state.actionLog.slice(-14),
+  };
+}
+
+function buildDecisionMemory(index) {
+  return state.agentDecisions.slice(0, 5).map((decision) => ({
+    sameAgent: decision.seat === index,
+    playerName: decision.playerName,
+    stage: decision.stage,
+    finalAction: actionLabel(decision.finalAction),
+    source: decision.finalAction.source,
+    confidence: decision.finalAction.confidence,
+    reason: decision.finalAction.reason,
+    gtoTopOptions: decision.gtoOptions.slice(0, 3).map((option) => ({
+      action: actionLabel(option),
+      score: option.score || option.confidence || 0,
+      reason: option.reason || "",
+    })),
+  }));
 }
 
 function chooseBaselineAgentAction(index) {
@@ -980,10 +1022,15 @@ function playerTemplate(player, index) {
 
 function shouldShowCards(player, index) {
   if (!player.cards.length) return false;
+  if (isUserSeat(index)) return true;
   if (controls.showAllCards.checked) return true;
   if (state.stage === "showdown" && !player.folded) return true;
   if (state.currentPlayer === index && !player.isAgent) return true;
   return false;
+}
+
+function isUserSeat(index) {
+  return index === userSeatIndex;
 }
 
 function sidePotTemplate(pot, index) {
@@ -1064,6 +1111,9 @@ function updateActionControls(legal) {
   controls.betRaiseBtn.disabled = disabled || (!legal.canBetRaise && !legal.canShortAllInRaise);
   controls.allInBtn.disabled = disabled || !legal.canAllIn;
   controls.betAmount.disabled = disabled || (!legal.canBetRaise && !legal.canShortAllInRaise);
+  controls.betPresetButtons.forEach((button) => {
+    button.disabled = controls.betAmount.disabled;
+  });
   controls.callBtn.textContent = legal.callAmount ? `跟注 ${legal.callAmount}` : "跟注";
   controls.betRaiseBtn.textContent = state.currentBet > 0 ? "加注" : "下注";
 
@@ -1076,6 +1126,37 @@ function updateActionControls(legal) {
   }
 
   controls.newHandBtn.textContent = state.handNumber ? "开始下一局" : "开始新局";
+}
+
+function applyBetPreset(button) {
+  const legal = getLegalActions();
+  if (controls.betAmount.disabled) {
+    return;
+  }
+
+  const preset = button.dataset.betPreset;
+  const potSize = button.dataset.potSize ? Number(button.dataset.potSize) : null;
+  const target = preset === "min" ? legal.minTarget : suggestedPotTarget(legal, potSize);
+  controls.betAmount.value = target;
+}
+
+function suggestedPotTarget(legal, fraction) {
+  const player = state.players[state.currentPlayer];
+  if (!player || !Number.isFinite(fraction)) {
+    return legal.minTarget;
+  }
+
+  const potAfterCall = totalPot() + legal.callAmount;
+  const rawTarget =
+    state.currentBet > 0
+      ? state.currentBet + Math.ceil(potAfterCall * fraction)
+      : Math.ceil(Math.max(state.bigBlind, totalPot()) * fraction);
+  return clamp(roundToChip(rawTarget), legal.minTarget, legal.maxTarget);
+}
+
+function roundToChip(value) {
+  const chip = Math.max(1, Math.min(state.smallBlind || 1, state.bigBlind || 1));
+  return Math.ceil(value / chip) * chip;
 }
 
 function cardTemplate(card) {
@@ -1146,6 +1227,9 @@ controls.callBtn.addEventListener("click", () => applyAction("call"));
 controls.betRaiseBtn.addEventListener("click", () => applyAction("betRaise"));
 controls.allInBtn.addEventListener("click", () => applyAction("allIn"));
 controls.showAllCards.addEventListener("change", render);
+controls.betPresetButtons.forEach((button) => {
+  button.addEventListener("click", () => applyBetPreset(button));
+});
 
 window.PokerGame = {
   getState: () => state,

@@ -33,6 +33,9 @@
 - [x] DeepSeek + GTO decision pipeline
 - [x] Agent explanation output
 - [x] Frontend AI/GTO decision summary panel
+- [x] Quick bet sizing buttons: min, 1/4 pot, 1/3 pot, 1/2 pot, pot
+- [x] Agent action-route memory sent with every decision
+- [x] GTO base memory sent with every Agent decision
 
 ## Later Product Work
 
