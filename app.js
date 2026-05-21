@@ -51,6 +51,7 @@ const views = {
   playersGrid: document.querySelector("#playersGrid"),
   actionLog: document.querySelector("#actionLog"),
   currentActor: document.querySelector("#currentActor"),
+  agentDecisionPanel: document.querySelector("#agentDecisionPanel"),
 };
 
 let agentTimer = null;
@@ -71,6 +72,7 @@ function createEmptyState() {
     handNumber: 0,
     winners: [],
     sidePots: [],
+    agentDecisions: [],
     actionLog: ["设置规则后点击“开始新局”"],
   };
 }
@@ -176,6 +178,7 @@ function startHand() {
   state.minRaise = settings.bigBlind;
   state.winners = [];
   state.sidePots = [];
+  state.agentDecisions = [];
   state.actionLog = [];
   state.handNumber += 1;
 
@@ -771,35 +774,126 @@ function clearAgentTimer() {
   }
 }
 
-function applyAgentAction() {
-  const action = chooseBaselineAgentAction(state.currentPlayer);
+async function applyAgentAction() {
+  const seat = state.currentPlayer;
+  const action = await requestAgentAction(seat);
+  if (state.currentPlayer !== seat || !isHandInProgress()) {
+    return;
+  }
+
   if (action.amount) {
     controls.betAmount.value = action.amount;
   }
+  if (action.source || action.reason) {
+    state.players[seat].lastAction = `${action.source || "Agent"}: ${action.reason || ""}`;
+  }
+  recordAgentDecision(seat, action);
   applyAction(action.type);
+}
+
+async function requestAgentAction(index) {
+  const snapshot = buildAgentSnapshot(index);
+  try {
+    const response = await fetch("/api/agent/act", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(snapshot),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Agent API ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    const fallback = chooseBaselineAgentAction(index);
+    return { ...fallback, reason: error.message, gtoRecommendation: fallback, gtoOptions: fallback.gtoOptions || [] };
+  }
+}
+
+function buildAgentSnapshot(index) {
+  const player = state.players[index];
+  return {
+    seatIndex: index,
+    stage: state.stage,
+    holeCards: player.cards,
+    communityCards: state.community,
+    pot: totalPot(),
+    currentBet: state.currentBet,
+    minRaise: state.minRaise,
+    bigBlind: state.bigBlind,
+    stack: player.stack,
+    committed: player.committed,
+    streetBet: player.streetBet,
+    position: player.role,
+    legalActions: getLegalActions(index),
+    opponents: state.players
+      .map((seat, seatIndex) => ({
+        seatIndex,
+        name: seat.name,
+        stack: seat.stack,
+        committed: seat.committed,
+        streetBet: seat.streetBet,
+        folded: seat.folded,
+        allIn: seat.allIn,
+        role: seat.role,
+        lastAction: seat.lastAction,
+      }))
+      .filter((seat) => seat.seatIndex !== index),
+  };
 }
 
 function chooseBaselineAgentAction(index) {
   const legal = getLegalActions(index);
   const player = state.players[index];
   const strength = estimateAgentStrength(player);
+  const options = scoreLocalAgentOptions(legal, player, strength);
+  const best = options[0] || { type: "check", score: 0, reason: "无合法动作。" };
+
+  return {
+    type: best.type,
+    amount: best.amount,
+    source: "local-gto-baseline",
+    confidence: best.score,
+    reason: best.reason,
+    gtoOptions: options,
+  };
+}
+
+function scoreLocalAgentOptions(legal, player, strength) {
+  const pressure = legal.toCall && player.stack ? Math.min(1, legal.toCall / Math.max(1, player.stack)) : 0;
+  const options = [];
 
   if (legal.canCheck) {
-    if (legal.canBetRaise && strength > 0.74) {
-      return { type: "betRaise", amount: legal.minTarget };
-    }
-    return { type: "check" };
+    options.push({ type: "check", score: roundScore(0.62 - strength * 0.16), reason: "免费继续，保留权益。" });
+  }
+  if (legal.canCall) {
+    options.push({
+      type: "call",
+      score: roundScore(strength - pressure * 0.68 + 0.14),
+      reason: `跟注 ${legal.callAmount}，看后续牌面。`,
+    });
+  }
+  if (legal.canFold) {
+    options.push({ type: "fold", score: roundScore(1 - strength + pressure * 0.4), reason: "面对压力时控制损失。" });
+  }
+  if (legal.canBetRaise) {
+    options.push({
+      type: "betRaise",
+      amount: legal.minTarget,
+      score: roundScore(strength * 0.9 + 0.08),
+      reason: `加注到 ${legal.minTarget} 施压。`,
+    });
+  }
+  if (legal.canAllIn) {
+    options.push({
+      type: "allIn",
+      amount: legal.maxTarget,
+      score: roundScore(strength * 1.05 - 0.22),
+      reason: "高风险最大压力线。",
+    });
   }
 
-  if (legal.callAmount >= player.stack) {
-    return strength > 0.58 ? { type: "allIn" } : { type: "fold" };
-  }
-
-  if (legal.callAmount <= state.bigBlind || strength > 0.5) {
-    return { type: "call" };
-  }
-
-  return { type: "fold" };
+  return options.sort((a, b) => b.score - a.score);
 }
 
 function estimateAgentStrength(player) {
@@ -820,6 +914,20 @@ function estimateAgentStrength(player) {
   return Math.min(0.95, high / 20 + pairBonus + suitedBonus + connectedBonus);
 }
 
+function recordAgentDecision(seat, action) {
+  const options = action.gtoOptions || action.gtoRecommendation?.gtoOptions || [];
+  state.agentDecisions.unshift({
+    seat,
+    playerName: state.players[seat]?.name || `座位 ${seat + 1}`,
+    stage: stageText(),
+    finalAction: action,
+    gtoRecommendation: action.gtoRecommendation || null,
+    gtoOptions: options,
+    createdAt: new Date().toLocaleTimeString("zh-CN", { hour12: false }),
+  });
+  state.agentDecisions = state.agentDecisions.slice(0, 4);
+}
+
 function render() {
   const legal = getLegalActions();
   views.stageLabel.textContent = stageText();
@@ -829,6 +937,7 @@ function render() {
   views.playersGrid.innerHTML = state.players.map(playerTemplate).join("");
   views.actionLog.textContent = state.actionLog.at(-1) || "";
   views.currentActor.innerHTML = currentActorTemplate(legal);
+  views.agentDecisionPanel.innerHTML = agentDecisionPanelTemplate();
   updateActionControls(legal);
 }
 
@@ -896,6 +1005,54 @@ function currentActorTemplate(legal) {
   const agentHint = player.isAgent ? "Agent 自动行动中" : "真人玩家行动";
   const callText = legal.callAmount ? `需跟注 ${legal.callAmount}` : "可过牌";
   return `<strong>${escapeHtml(player.name)}</strong><br>${agentHint} · ${callText} · 最小目标 ${legal.minTarget || 0}`;
+}
+
+function agentDecisionPanelTemplate() {
+  if (!state.agentDecisions.length) {
+    return "等待 Agent 行动。这里会展示 GTO 每个合法选择的评分、推荐动作和 DeepSeek 最终动作摘要。";
+  }
+
+  return state.agentDecisions.map(decisionTemplate).join("");
+}
+
+function decisionTemplate(decision) {
+  const final = decision.finalAction;
+  const options = decision.gtoOptions.length ? decision.gtoOptions : [final];
+  return `
+    <article class="decision-card">
+      <div class="decision-title">
+        <span>${escapeHtml(decision.playerName)} · ${escapeHtml(decision.stage)}</span>
+        <span>${escapeHtml(decision.createdAt)}</span>
+      </div>
+      <div>最终：${escapeHtml(actionLabel(final))} · ${escapeHtml(final.source || "agent")}${final.confidence ? ` · 置信 ${Math.round(final.confidence * 100)}%` : ""}</div>
+      <div>理由：${escapeHtml(final.reason || "按 GTO baseline 和合法动作选择。")}</div>
+      <div class="decision-options">
+        ${options.map(optionTemplate).join("")}
+      </div>
+    </article>
+  `;
+}
+
+function optionTemplate(option) {
+  return `
+    <div class="decision-option">
+      <span>${escapeHtml(actionLabel(option))}</span>
+      <span class="decision-score">${Math.round((option.score || option.confidence || 0) * 100)}</span>
+      <span>${escapeHtml(option.reason || "")}</span>
+    </div>
+  `;
+}
+
+function actionLabel(action) {
+  const labels = {
+    fold: "弃牌",
+    check: "过牌",
+    call: "跟注",
+    betRaise: "下注/加注",
+    allIn: "全下",
+  };
+  const amount = action.amount ? ` ${action.amount}` : "";
+  return `${labels[action.type] || action.type || "未知"}${amount}`;
 }
 
 function updateActionControls(legal) {
@@ -971,6 +1128,10 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
 }
 
+function roundScore(value) {
+  return Math.max(0, Math.min(1, Number(value.toFixed(2))));
+}
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char],
@@ -989,6 +1150,7 @@ controls.showAllCards.addEventListener("change", render);
 window.PokerGame = {
   getState: () => state,
   getLegalActions,
+  buildAgentSnapshot,
   buildSidePots,
   evaluateSeven,
   compareHands,

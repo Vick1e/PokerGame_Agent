@@ -17,7 +17,7 @@ function buildDeepSeekDecisionPayload(snapshot, gtoAction) {
             type: "fold | check | call | betRaise | allIn",
             amount: "number or null",
             confidence: "0..1",
-            reason: "short Chinese explanation",
+            reason: "short Chinese explanation; do not include hidden chain-of-thought",
           },
         }),
       },
@@ -46,9 +46,15 @@ async function requestDeepSeekDecision(snapshot, gtoAction, fetchImpl = fetch) {
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content || "{}";
-  return JSON.parse(content);
+  return parseDecisionContent(content);
+}
+
+function parseDecisionContent(content) {
+  const trimmed = content.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  return JSON.parse(fenced ? fenced[1].trim() : trimmed);
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { buildDeepSeekDecisionPayload, requestDeepSeekDecision };
+  module.exports = { buildDeepSeekDecisionPayload, requestDeepSeekDecision, parseDecisionContent };
 }

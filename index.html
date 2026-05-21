@@ -17,6 +17,21 @@
           <div class="round-pill" id="stageLabel">等待开局</div>
         </header>
 
+        <div class="table-action-bar action-panel">
+          <div class="actor-box" id="currentActor">等待开局</div>
+          <label>
+            下注 / 加注至
+            <input id="betAmount" type="number" min="0" step="10" value="20" />
+          </label>
+          <div class="button-grid">
+            <button id="foldBtn">弃牌</button>
+            <button id="checkBtn">过牌</button>
+            <button id="callBtn">跟注</button>
+            <button id="betRaiseBtn">下注 / 加注</button>
+            <button id="allInBtn">全下</button>
+          </div>
+        </div>
+
         <div class="felt">
           <div class="pot-panel">
             <span>底池</span>
@@ -80,20 +95,9 @@ Luna</textarea>
           </div>
         </div>
 
-        <div class="panel-section action-panel">
-          <h2>当前行动</h2>
-          <div class="actor-box" id="currentActor">等待开局</div>
-          <label>
-            下注 / 加注至
-            <input id="betAmount" type="number" min="0" step="10" value="20" />
-          </label>
-          <div class="button-grid">
-            <button id="foldBtn">弃牌</button>
-            <button id="checkBtn">过牌</button>
-            <button id="callBtn">跟注</button>
-            <button id="betRaiseBtn">下注 / 加注</button>
-            <button id="allInBtn">全下</button>
-          </div>
+        <div class="panel-section ai-panel">
+          <h2>AI / GTO 决策</h2>
+          <div class="ai-decision-box" id="agentDecisionPanel">等待 Agent 行动。</div>
         </div>
 
         <div class="panel-section compact">

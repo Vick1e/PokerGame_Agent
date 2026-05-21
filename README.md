@@ -16,6 +16,7 @@
 - 庄位和盲注随每局轮转
 - 跨多局保留玩家筹码
 - 非当前行动玩家手牌默认隐藏
+- 前端展示 Agent 决策摘要、GTO 每个合法选择的评分和 DeepSeek 最终动作
 - 七选五手牌评估，支持高牌到同花顺
 - 摊牌后自动分配底池
 
@@ -30,7 +31,9 @@
 也可以启动一个简单静态服务：
 
 ```bash
-python3 -m http.server 5173
+node server/index.js
 ```
 
 然后访问 `http://localhost:5173`。
+
+如需启用 DeepSeek Agent，在本地环境变量中设置 `DEEPSEEK_API_KEY` 后再启动服务。不要把 API key 写入仓库文件。

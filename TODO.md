@@ -29,9 +29,10 @@
 - [x] Agent legal-action validator
 - [x] Local GTO baseline policy
 - [x] DeepSeek request payload/client helper
-- [ ] DeepSeek backend proxy endpoint
-- [ ] DeepSeek + GTO decision pipeline
-- [ ] Agent explanation output
+- [x] DeepSeek backend proxy endpoint
+- [x] DeepSeek + GTO decision pipeline
+- [x] Agent explanation output
+- [x] Frontend AI/GTO decision summary panel
 
 ## Later Product Work
 
