@@ -22,6 +22,7 @@
             <span>底池</span>
             <strong id="potValue">0</strong>
           </div>
+          <div class="side-pot-list" id="sidePots"></div>
           <div class="community-row" id="communityCards" aria-label="公共牌"></div>
           <div class="action-log" id="actionLog" aria-live="polite">
             设置规则后点击“开始新局”。
@@ -53,6 +54,14 @@
             庄位
             <input id="dealerSeat" type="number" min="1" value="1" />
           </label>
+          <label>
+            Agent 座位
+            <input id="agentSeats" type="text" placeholder="例如：2,4" />
+          </label>
+          <label class="check-row">
+            <input id="showAllCards" type="checkbox" />
+            显示所有手牌
+          </label>
         </div>
 
         <div class="panel-section">
@@ -64,22 +73,34 @@ Luna</textarea>
         </div>
 
         <div class="panel-section">
-          <h2>操作</h2>
-          <div class="button-grid">
+          <h2>牌局</h2>
+          <div class="button-grid compact-buttons">
             <button id="newHandBtn" class="primary">开始新局</button>
-            <button id="flopBtn">翻牌</button>
-            <button id="turnBtn">转牌</button>
-            <button id="riverBtn">河牌</button>
-            <button id="showdownBtn">摊牌结算</button>
-            <button id="resetBtn">重置</button>
+            <button id="resetBtn">重置比赛</button>
+          </div>
+        </div>
+
+        <div class="panel-section action-panel">
+          <h2>当前行动</h2>
+          <div class="actor-box" id="currentActor">等待开局</div>
+          <label>
+            下注 / 加注至
+            <input id="betAmount" type="number" min="0" step="10" value="20" />
+          </label>
+          <div class="button-grid">
+            <button id="foldBtn">弃牌</button>
+            <button id="checkBtn">过牌</button>
+            <button id="callBtn">跟注</button>
+            <button id="betRaiseBtn">下注 / 加注</button>
+            <button id="allInBtn">全下</button>
           </div>
         </div>
 
         <div class="panel-section compact">
           <h2>玩法说明</h2>
           <p>
-            本项目会自动洗牌、发手牌、收盲注，并在摊牌时用七选五算法比较牌型。
-            你可以改玩家数、筹码、盲注和姓名，做自己的桌游规则原型。
+            当前版本会自动推进四轮下注、公共牌和摊牌。多人同屏时只显示当前行动玩家手牌；
+            如需调试可勾选显示所有手牌。
           </p>
         </div>
       </aside>

@@ -34,6 +34,11 @@ textarea {
   font: inherit;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
@@ -136,6 +141,24 @@ h2 {
   font-size: 1.2rem;
 }
 
+.side-pot-list {
+  position: absolute;
+  top: 76px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: min(560px, calc(100% - 48px));
+}
+
+.side-pot {
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(0, 0, 0, 0.22);
+  font-size: 0.76rem;
+}
+
 .community-row,
 .hand-row {
   display: flex;
@@ -203,9 +226,22 @@ h2 {
   background: var(--panel-2);
 }
 
+.player-card.current {
+  border-color: rgba(104, 198, 152, 0.78);
+  box-shadow: 0 0 0 1px rgba(104, 198, 152, 0.22);
+}
+
 .player-card.winner {
   border-color: var(--gold);
   box-shadow: 0 0 0 1px rgba(226, 182, 89, 0.28);
+}
+
+.player-card.folded {
+  opacity: 0.58;
+}
+
+.player-card.all-in {
+  border-style: dashed;
 }
 
 .player-head {
@@ -232,10 +268,35 @@ h2 {
   font-size: 0.78rem;
 }
 
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+}
+
+.badge.active {
+  color: #102119;
+  background: #68c698;
+}
+
+.badge.danger {
+  color: #fff2f2;
+  background: rgba(228, 98, 98, 0.34);
+}
+
 .hand-name {
   min-height: 20px;
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.player-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .control-panel {
@@ -264,6 +325,16 @@ label {
   color: var(--muted);
 }
 
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.check-row input {
+  width: auto;
+}
+
 input,
 textarea {
   width: 100%;
@@ -290,6 +361,29 @@ textarea:focus {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.compact-buttons {
+  grid-template-columns: 1fr;
+}
+
+.action-panel .button-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.action-panel .button-grid button:last-child {
+  grid-column: 1 / -1;
+}
+
+.actor-box {
+  min-height: 48px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid rgba(104, 198, 152, 0.28);
+  border-radius: 7px;
+  color: var(--text);
+  background: rgba(104, 198, 152, 0.08);
+  line-height: 1.45;
 }
 
 button {
